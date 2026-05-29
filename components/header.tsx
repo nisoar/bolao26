@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { Trophy, Shield, Users } from "lucide-react"
+import { Trophy, Shield, Users, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useLanguage } from "@/lib/i18n/use-language"
@@ -16,22 +16,30 @@ export function Header() {
   const pathname = usePathname()
   const supabase = createClient()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const { locale } = useLanguage()
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const loadUserData = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
 
       if (!user) return
 
-      // Use database as single source of truth for admin status
-      const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
+      // Fetch profile data including admin status and display name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin, display_name")
+        .eq("id", user.id)
+        .single()
 
-      setIsAdmin(profile?.is_admin === true)
+      if (profile) {
+        setIsAdmin(profile.is_admin === true)
+        setDisplayName(profile.display_name || user.email?.split("@")[0] || null)
+      }
     }
-    checkAdmin()
+    loadUserData()
   }, [supabase])
 
   const handleLogout = async () => {
@@ -88,6 +96,17 @@ export function Header() {
               </DropdownMenu>
             )}
             <LanguageSwitcher />
+            {displayName && (
+              <Link href="/profile">
+                <Button 
+                  variant={pathname === "/profile" ? "default" : "ghost"} 
+                  className="gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  {displayName}
+                </Button>
+              </Link>
+            )}
             <Button variant="outline" onClick={handleLogout} className="bg-transparent">
               {t("nav", "logout", locale)}
             </Button>
