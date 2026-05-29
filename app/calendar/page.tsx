@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CountryFlag } from "@/components/country-flag"
 import { Header } from "@/components/header"
 import { cookies } from "next/headers"
 import { t, type Locale } from "@/lib/i18n/translations"
+import { Trophy, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface Match {
   id: string
@@ -22,169 +22,241 @@ export default async function CalendarPage() {
 
   const supabase = await createClient()
 
-  // Fetch all matches ordered by date
   const { data: matches } = await supabase
     .from("matches")
     .select("*")
     .order("match_date", { ascending: true })
 
-  // Group matches by date
-  const matchesByDate = new Map<string, Match[]>()
-  
+  // Group matches by date (using ISO date as key for sorting)
+  const matchesByDate = new Map<string, { dateObj: Date; matches: Match[] }>()
+
   if (matches) {
     for (const match of matches) {
-      const dateKey = new Date(match.match_date).toLocaleDateString(locale, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-      
+      const dateObj = new Date(match.match_date)
+      const dateKey = dateObj.toISOString().split("T")[0]
+
       if (!matchesByDate.has(dateKey)) {
-        matchesByDate.set(dateKey, [])
+        matchesByDate.set(dateKey, { dateObj, matches: [] })
       }
-      matchesByDate.get(dateKey)?.push(match as Match)
+      matchesByDate.get(dateKey)?.matches.push(match as Match)
     }
   }
+
+  // Get all unique months from matches
+  const months = new Map<string, { month: number; year: number; dates: string[] }>()
+  
+  for (const [dateKey, { dateObj }] of matchesByDate) {
+    const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`
+    if (!months.has(monthKey)) {
+      months.set(monthKey, { 
+        month: dateObj.getMonth(), 
+        year: dateObj.getFullYear(),
+        dates: []
+      })
+    }
+    months.get(monthKey)?.dates.push(dateKey)
+  }
+
+  const formatTeamName = (name: string) => {
+    const short = name.replace(/_/g, " ")
+    // Abbreviate long names
+    if (short.length > 10) {
+      const abbrevMap: Record<string, string> = {
+        "United States": "EUA",
+        "Saudi Arabia": "SAU",
+        "South Korea": "COR",
+        "Costa Rica": "CRC",
+        "New Zealand": "NZL",
+      }
+      return abbrevMap[short] || short.slice(0, 3).toUpperCase()
+    }
+    return short
+  }
+
+  const weekDays = locale === "pt" 
+    ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+    : locale === "es"
+    ? ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+  const monthNames = locale === "pt"
+    ? ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    : locale === "es"
+    ? ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-yellow-50">
       <Header />
-      <main className="mx-auto max-w-6xl px-4 py-8 md:py-12">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="mb-2 text-balance text-4xl font-bold tracking-tight text-green-800 md:text-5xl">
+
+      {/* Title */}
+      <div className="border-b border-green-200 bg-white/70 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-6">
+          <h1 className="text-2xl font-bold text-green-900 md:text-3xl">
             {t("calendar", "title", locale)}
           </h1>
-          <p className="text-pretty text-lg text-gray-600 md:text-xl">
+          <p className="mt-1 text-sm text-green-700/70">
             {t("calendar", "subtitle", locale)}
           </p>
         </div>
+      </div>
 
-        {/* Calendar Content */}
-        {matchesByDate.size === 0 ? (
-          <Card className="border-green-200 bg-white/80 backdrop-blur">
-            <CardContent className="py-12 text-center">
-              <p className="text-lg text-gray-600">{t("calendar", "noMatches", locale)}</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-8">
-            {Array.from(matchesByDate.entries()).map(([date, dayMatches]) => (
-              <div key={date}>
-                {/* Date Header */}
-                <div className="mb-4 rounded-lg bg-green-700 px-6 py-3">
-                  <h2 className="text-xl font-bold text-white">{date}</h2>
+      {/* Calendar Grid */}
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        {Array.from(months.entries()).map(([monthKey, { month, year, dates }]) => {
+          // Calculate calendar grid
+          const firstDay = new Date(year, month, 1)
+          const lastDay = new Date(year, month + 1, 0)
+          const startPadding = firstDay.getDay()
+          const totalDays = lastDay.getDate()
+
+          // Create calendar cells
+          const cells: (number | null)[] = []
+          for (let i = 0; i < startPadding; i++) cells.push(null)
+          for (let i = 1; i <= totalDays; i++) cells.push(i)
+          while (cells.length % 7 !== 0) cells.push(null)
+
+          return (
+            <div key={monthKey} className="mb-8">
+              {/* Month Header */}
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-green-900">
+                  {monthNames[month]} {year}
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-green-700">
+                  <Trophy className="h-4 w-4 text-yellow-600" />
+                  <span>{dates.length} dias com jogos</span>
+                </div>
+              </div>
+
+              {/* Calendar */}
+              <div className="overflow-hidden rounded-xl border border-green-200 bg-white/80 shadow-lg backdrop-blur">
+                {/* Week Days Header */}
+                <div className="grid grid-cols-7 border-b border-green-200 bg-green-600">
+                  {weekDays.map((day) => (
+                    <div key={day} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">
+                      {day}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Matches for this date */}
-                <div className="grid gap-4 md:grid-cols-2">
-                  {dayMatches.map((match) => {
-                    const matchTime = new Date(match.match_date).toLocaleTimeString(locale, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7">
+                  {cells.map((day, index) => {
+                    if (day === null) {
+                      return <div key={index} className="min-h-[100px] border-b border-r border-green-100 bg-gray-50/50 md:min-h-[120px]" />
+                    }
+
+                    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                    const dayData = matchesByDate.get(dateKey)
+                    const hasMatches = dayData && dayData.matches.length > 0
+                    const isToday = new Date().toISOString().split("T")[0] === dateKey
 
                     return (
-                      <Card
-                        key={match.id}
-                        className="border-green-200 bg-white/80 backdrop-blur transition-all hover:shadow-lg"
+                      <div
+                        key={index}
+                        className={`min-h-[100px] border-b border-r border-green-100 p-1 transition-colors md:min-h-[120px] md:p-2 ${
+                          hasMatches
+                            ? "bg-green-50 hover:bg-green-100/70"
+                            : "bg-white hover:bg-gray-50"
+                        } ${isToday ? "ring-2 ring-inset ring-yellow-400" : ""}`}
                       >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-600">
-                              {t("admin", "matchNumber", locale)} {match.match_number}
-                            </span>
-                            <span className="text-sm font-semibold text-green-700">
-                              {matchTime}
-                            </span>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          {/* Teams */}
-                          <div className="space-y-3">
-                            {/* Team A */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <CountryFlag country={match.team_a} size="lg" />
-                                <span className="font-semibold text-gray-800">
-                                  {match.team_a.replace(/_/g, " ")}
-                                </span>
-                              </div>
-                              {match.is_finished && match.actual_score_a !== null ? (
-                                <span className="text-2xl font-bold text-green-700">
-                                  {match.actual_score_a}
-                                </span>
-                              ) : (
-                                <span className="text-xl font-bold text-gray-400">-</span>
-                              )}
-                            </div>
+                        {/* Day Number */}
+                        <div className={`mb-1 text-right text-xs font-medium md:text-sm ${
+                          hasMatches ? "text-green-700" : "text-gray-400"
+                        } ${isToday ? "text-yellow-600 font-bold" : ""}`}>
+                          {day}
+                        </div>
 
-                            {/* Divider */}
-                            <div className="border-t border-gray-200" />
+                        {/* Matches */}
+                        {hasMatches && (
+                          <div className="space-y-1">
+                            {dayData.matches.map((match) => {
+                              const matchTime = new Date(match.match_date).toLocaleTimeString(locale, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
 
-                            {/* Team B */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <CountryFlag country={match.team_b} size="lg" />
-                                <span className="font-semibold text-gray-800">
-                                  {match.team_b.replace(/_/g, " ")}
-                                </span>
-                              </div>
-                              {match.is_finished && match.actual_score_b !== null ? (
-                                <span className="text-2xl font-bold text-green-700">
-                                  {match.actual_score_b}
-                                </span>
-                              ) : (
-                                <span className="text-xl font-bold text-gray-400">-</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Status Badge */}
-                          <div className="mt-4 flex justify-center">
-                            {match.is_finished ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
-                                <svg
-                                  className="h-3 w-3"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
+                              return (
+                                <div
+                                  key={match.id}
+                                  className={`group relative overflow-hidden rounded-lg p-1.5 text-xs transition-all hover:scale-[1.02] md:p-2 ${
+                                    match.is_finished
+                                      ? "bg-gradient-to-r from-yellow-100 to-amber-100 ring-1 ring-yellow-400/50"
+                                      : "bg-white ring-1 ring-green-200 hover:ring-green-400"
+                                  }`}
                                 >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                {t("calendar", "finalScore", locale)}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-800">
-                                <svg
-                                  className="h-3 w-3"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                {t("calendar", "scheduled", locale)}
-                              </span>
-                            )}
+                                  {/* Time */}
+                                  <div className="mb-1 text-[10px] font-medium text-green-600 md:text-xs">
+                                    {matchTime}
+                                  </div>
+
+                                  {/* Teams */}
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                                      <CountryFlag countryName={match.team_a} size="sm" />
+                                      <span className="truncate text-[10px] font-medium text-gray-800 md:text-xs">
+                                        {formatTeamName(match.team_a)}
+                                      </span>
+                                    </div>
+
+                                    {match.is_finished ? (
+                                      <div className="flex items-center gap-0.5 rounded bg-green-700 px-1.5 py-0.5">
+                                        <span className="text-[10px] font-bold text-white md:text-xs">{match.actual_score_a}</span>
+                                        <span className="text-[10px] text-green-200">:</span>
+                                        <span className="text-[10px] font-bold text-white md:text-xs">{match.actual_score_b}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[10px] text-gray-400 md:text-xs">vs</span>
+                                    )}
+
+                                    <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
+                                      <span className="truncate text-[10px] font-medium text-gray-800 md:text-xs">
+                                        {formatTeamName(match.team_b)}
+                                      </span>
+                                      <CountryFlag countryName={match.team_b} size="sm" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
                           </div>
-                        </CardContent>
-                      </Card>
+                        )}
+                      </div>
                     )
                   })}
                 </div>
               </div>
-            ))}
+            </div>
+          )
+        })}
+
+        {matchesByDate.size === 0 && (
+          <div className="rounded-xl border border-green-200 bg-white/80 p-12 text-center shadow-lg">
+            <p className="text-gray-500">{t("calendar", "noMatches", locale)}</p>
           </div>
         )}
       </main>
+
+      {/* Legend */}
+      <div className="border-t border-green-200 bg-white/70">
+        <div className="mx-auto max-w-7xl px-4 py-4">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-300" />
+              <span>Dia com jogos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-gradient-to-r from-yellow-100 to-amber-100 ring-1 ring-yellow-400/50" />
+              <span>Jogo finalizado</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-white ring-2 ring-yellow-400" />
+              <span>Hoje</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

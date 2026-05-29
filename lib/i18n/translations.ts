@@ -93,6 +93,21 @@ const translations = {
     resetLinkExpired: { en: "This reset link has expired or is invalid. Please request a new one.", pt: "Este link de redefinição expirou ou é inválido. Por favor, solicite um novo.", es: "Este enlace de restablecimiento expiro o es invalido. Por favor, solicita uno nuevo.", it: "Questo link di reimpostazione e scaduto o non e valido. Richiedine uno nuovo.", fr: "Ce lien de reinitialisation a expire ou est invalide. Veuillez en demander un nouveau." },
   },
 
+  // ===== PROFILE =====
+  profile: {
+    title: { en: "My Profile", pt: "Meu Perfil", es: "Mi Perfil", it: "Il Mio Profilo", fr: "Mon Profil" },
+    subtitle: { en: "Manage your account settings", pt: "Gerencie as configurações da sua conta", es: "Gestiona la configuracion de tu cuenta", it: "Gestisci le impostazioni del tuo account", fr: "Gerez les parametres de votre compte" },
+    accountInfo: { en: "Account Information", pt: "Informações da Conta", es: "Informacion de la Cuenta", it: "Informazioni Account", fr: "Informations du Compte" },
+    changePassword: { en: "Change Password", pt: "Alterar Senha", es: "Cambiar Contrasena", it: "Cambia Password", fr: "Changer le mot de passe" },
+    currentPassword: { en: "Current Password", pt: "Senha Atual", es: "Contrasena Actual", it: "Password Attuale", fr: "Mot de passe actuel" },
+    saveChanges: { en: "Save Changes", pt: "Salvar Alterações", es: "Guardar Cambios", it: "Salva Modifiche", fr: "Enregistrer" },
+    saving: { en: "Saving...", pt: "Salvando...", es: "Guardando...", it: "Salvataggio...", fr: "Enregistrement..." },
+    profileUpdated: { en: "Profile updated successfully!", pt: "Perfil atualizado com sucesso!", es: "Perfil actualizado con exito!", it: "Profilo aggiornato con successo!", fr: "Profil mis a jour avec succes !" },
+    passwordChanged: { en: "Password changed successfully!", pt: "Senha alterada com sucesso!", es: "Contrasena cambiada con exito!", it: "Password cambiata con successo!", fr: "Mot de passe change avec succes !" },
+    passwordMismatch: { en: "New passwords do not match.", pt: "As novas senhas não coincidem.", es: "Las nuevas contrasenas no coinciden.", it: "Le nuove password non corrispondono.", fr: "Les nouveaux mots de passe ne correspondent pas." },
+    leaveBlankPassword: { en: "Leave blank to keep current password", pt: "Deixe em branco para manter a senha atual", es: "Deja en blanco para mantener la contrasena actual", it: "Lascia vuoto per mantenere la password attuale", fr: "Laissez vide pour conserver le mot de passe actuel" },
+  },
+
   // ===== DASHBOARD =====
   dashboard: {
     title: { en: "Your Predictions", pt: "Suas Previsões", es: "Tus Predicciones", it: "Le Tue Previsioni", fr: "Vos Predictions" },

@@ -1,8 +1,12 @@
+"use client"
+
 import Image from "next/image"
 
 interface CountryFlagProps {
-  countryName: string
+  countryName?: string
+  country?: string // alias for countryName
   className?: string
+  size?: "sm" | "md" | "lg" | "xl"
 }
 
 // Map country names to their ISO 3166-1 alpha-2 codes
@@ -78,21 +82,44 @@ const countryCodeMap: Record<string, string> = {
   Suriname: "sr",
   Sweden: "se",
   Türkiye: "tr",
+  Turkey: "tr",
   Ukraine: "ua",
-  Wales: "gb-wls"
+  Wales: "gb-wls",
+  Chile: "cl",
+  Peru: "pe",
+  Venezuela: "ve",
+  CostaRica: "cr",
+  "Costa Rica": "cr",
+  Honduras: "hn",
+  ElSalvador: "sv",
+  "El Salvador": "sv",
+  Guatemala: "gt",
+  Nicaragua: "ni",
+  TrinidadAndTobago: "tt",
+  "Trinidad and Tobago": "tt",
 }
 
-export function CountryFlag({ countryName, className = "" }: CountryFlagProps) {
-  const countryCode = countryCodeMap[countryName] || "un"
+const sizeMap = {
+  sm: { width: 16, height: 12, flagWidth: "w20" },
+  md: { width: 24, height: 18, flagWidth: "w40" },
+  lg: { width: 32, height: 24, flagWidth: "w40" },
+  xl: { width: 48, height: 36, flagWidth: "w80" },
+}
+
+export function CountryFlag({ countryName, country, className = "", size = "md" }: CountryFlagProps) {
+  const name = countryName || country || ""
+  const countryCode = countryCodeMap[name] || countryCodeMap[name.replace(/_/g, " ")] || "un"
+  const { width, height, flagWidth } = sizeMap[size]
 
   return (
     <Image
-      src={`https://flagcdn.com/w20/${countryCode}.png`}
-      srcSet={`https://flagcdn.com/w40/${countryCode}.png 2x`}
-      width={20}
-      height={15}
-      alt={`${countryName} flag`}
-      className={`inline-block ${className}`}
+      src={`https://flagcdn.com/${flagWidth}/${countryCode}.png`}
+      srcSet={`https://flagcdn.com/${flagWidth === "w20" ? "w40" : "w80"}/${countryCode}.png 2x`}
+      width={width}
+      height={height}
+      alt={`${name} flag`}
+      className={`inline-block rounded-sm shadow-sm ${className}`}
+      unoptimized
     />
   )
 }
