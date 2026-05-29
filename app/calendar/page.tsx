@@ -86,16 +86,16 @@ export default async function CalendarPage() {
     : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-yellow-50">
       <Header />
 
       {/* Title */}
-      <div className="border-b border-slate-700/50 bg-slate-800/50 backdrop-blur">
+      <div className="border-b border-green-200 bg-white/70 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-6">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">
+          <h1 className="text-2xl font-bold text-green-900 md:text-3xl">
             {t("calendar", "title", locale)}
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-green-700/70">
             {t("calendar", "subtitle", locale)}
           </p>
         </div>
@@ -120,21 +120,21 @@ export default async function CalendarPage() {
             <div key={monthKey} className="mb-8">
               {/* Month Header */}
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl font-bold text-green-900">
                   {monthNames[month]} {year}
                 </h2>
-                <div className="flex items-center gap-2 text-sm text-slate-400">
-                  <Trophy className="h-4 w-4 text-yellow-500" />
+                <div className="flex items-center gap-2 text-sm text-green-700">
+                  <Trophy className="h-4 w-4 text-yellow-600" />
                   <span>{dates.length} dias com jogos</span>
                 </div>
               </div>
 
               {/* Calendar */}
-              <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur">
+              <div className="overflow-hidden rounded-xl border border-green-200 bg-white/80 shadow-lg backdrop-blur">
                 {/* Week Days Header */}
-                <div className="grid grid-cols-7 border-b border-slate-700/50 bg-slate-800/50">
+                <div className="grid grid-cols-7 border-b border-green-200 bg-green-600">
                   {weekDays.map((day) => (
-                    <div key={day} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <div key={day} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white">
                       {day}
                     </div>
                   ))}
@@ -144,7 +144,7 @@ export default async function CalendarPage() {
                 <div className="grid grid-cols-7">
                   {cells.map((day, index) => {
                     if (day === null) {
-                      return <div key={index} className="min-h-[100px] border-b border-r border-slate-700/30 bg-slate-900/30 md:min-h-[120px]" />
+                      return <div key={index} className="min-h-[100px] border-b border-r border-green-100 bg-gray-50/50 md:min-h-[120px]" />
                     }
 
                     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
@@ -155,16 +155,16 @@ export default async function CalendarPage() {
                     return (
                       <div
                         key={index}
-                        className={`min-h-[100px] border-b border-r border-slate-700/30 p-1 transition-colors md:min-h-[120px] md:p-2 ${
+                        className={`min-h-[100px] border-b border-r border-green-100 p-1 transition-colors md:min-h-[120px] md:p-2 ${
                           hasMatches
-                            ? "bg-emerald-900/20 hover:bg-emerald-900/30"
-                            : "bg-slate-800/20 hover:bg-slate-800/40"
-                        } ${isToday ? "ring-2 ring-inset ring-yellow-500/50" : ""}`}
+                            ? "bg-green-50 hover:bg-green-100/70"
+                            : "bg-white hover:bg-gray-50"
+                        } ${isToday ? "ring-2 ring-inset ring-yellow-400" : ""}`}
                       >
                         {/* Day Number */}
                         <div className={`mb-1 text-right text-xs font-medium md:text-sm ${
-                          hasMatches ? "text-emerald-400" : "text-slate-500"
-                        } ${isToday ? "text-yellow-400" : ""}`}>
+                          hasMatches ? "text-green-700" : "text-gray-400"
+                        } ${isToday ? "text-yellow-600 font-bold" : ""}`}>
                           {day}
                         </div>
 
@@ -182,12 +182,12 @@ export default async function CalendarPage() {
                                   key={match.id}
                                   className={`group relative overflow-hidden rounded-lg p-1.5 text-xs transition-all hover:scale-[1.02] md:p-2 ${
                                     match.is_finished
-                                      ? "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 ring-1 ring-yellow-500/30"
-                                      : "bg-slate-700/50 ring-1 ring-slate-600/30 hover:ring-emerald-500/50"
+                                      ? "bg-gradient-to-r from-yellow-100 to-amber-100 ring-1 ring-yellow-400/50"
+                                      : "bg-white ring-1 ring-green-200 hover:ring-green-400"
                                   }`}
                                 >
                                   {/* Time */}
-                                  <div className="mb-1 text-[10px] font-medium text-slate-400 md:text-xs">
+                                  <div className="mb-1 text-[10px] font-medium text-green-600 md:text-xs">
                                     {matchTime}
                                   </div>
 
@@ -195,23 +195,23 @@ export default async function CalendarPage() {
                                   <div className="flex items-center justify-between gap-1">
                                     <div className="flex items-center gap-1 min-w-0 flex-1">
                                       <CountryFlag countryName={match.team_a} size="sm" />
-                                      <span className="truncate text-[10px] font-medium text-white md:text-xs">
+                                      <span className="truncate text-[10px] font-medium text-gray-800 md:text-xs">
                                         {formatTeamName(match.team_a)}
                                       </span>
                                     </div>
 
                                     {match.is_finished ? (
-                                      <div className="flex items-center gap-0.5 rounded bg-slate-900/50 px-1.5 py-0.5">
+                                      <div className="flex items-center gap-0.5 rounded bg-green-700 px-1.5 py-0.5">
                                         <span className="text-[10px] font-bold text-white md:text-xs">{match.actual_score_a}</span>
-                                        <span className="text-[10px] text-slate-500">:</span>
+                                        <span className="text-[10px] text-green-200">:</span>
                                         <span className="text-[10px] font-bold text-white md:text-xs">{match.actual_score_b}</span>
                                       </div>
                                     ) : (
-                                      <span className="text-[10px] text-slate-500 md:text-xs">vs</span>
+                                      <span className="text-[10px] text-gray-400 md:text-xs">vs</span>
                                     )}
 
                                     <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
-                                      <span className="truncate text-[10px] font-medium text-white md:text-xs">
+                                      <span className="truncate text-[10px] font-medium text-gray-800 md:text-xs">
                                         {formatTeamName(match.team_b)}
                                       </span>
                                       <CountryFlag countryName={match.team_b} size="sm" />
@@ -232,26 +232,26 @@ export default async function CalendarPage() {
         })}
 
         {matchesByDate.size === 0 && (
-          <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-12 text-center">
-            <p className="text-slate-400">{t("calendar", "noMatches", locale)}</p>
+          <div className="rounded-xl border border-green-200 bg-white/80 p-12 text-center shadow-lg">
+            <p className="text-gray-500">{t("calendar", "noMatches", locale)}</p>
           </div>
         )}
       </main>
 
       {/* Legend */}
-      <div className="border-t border-slate-700/50 bg-slate-800/30">
+      <div className="border-t border-green-200 bg-white/70">
         <div className="mx-auto max-w-7xl px-4 py-4">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-600">
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-emerald-900/50 ring-1 ring-emerald-500/30" />
+              <div className="h-3 w-3 rounded bg-green-100 ring-1 ring-green-300" />
               <span>Dia com jogos</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-gradient-to-r from-yellow-500/30 to-amber-500/30 ring-1 ring-yellow-500/30" />
+              <div className="h-3 w-3 rounded bg-gradient-to-r from-yellow-100 to-amber-100 ring-1 ring-yellow-400/50" />
               <span>Jogo finalizado</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-3 w-3 rounded bg-slate-700/50 ring-2 ring-yellow-500/50" />
+              <div className="h-3 w-3 rounded bg-white ring-2 ring-yellow-400" />
               <span>Hoje</span>
             </div>
           </div>
