@@ -3,7 +3,7 @@ import { CountryFlag } from "@/components/country-flag"
 import { Header } from "@/components/header"
 import { cookies } from "next/headers"
 import { t, type Locale } from "@/lib/i18n/translations"
-import { Calendar, Clock, Trophy, ChevronRight } from "lucide-react"
+import { Trophy, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface Match {
   id: string
@@ -27,203 +27,236 @@ export default async function CalendarPage() {
     .select("*")
     .order("match_date", { ascending: true })
 
-  // Group matches by date
-  const matchesByDate = new Map<string, Match[]>()
+  // Group matches by date (using ISO date as key for sorting)
+  const matchesByDate = new Map<string, { dateObj: Date; matches: Match[] }>()
 
   if (matches) {
     for (const match of matches) {
-      const dateKey = new Date(match.match_date).toLocaleDateString(locale, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      const dateObj = new Date(match.match_date)
+      const dateKey = dateObj.toISOString().split("T")[0]
 
       if (!matchesByDate.has(dateKey)) {
-        matchesByDate.set(dateKey, [])
+        matchesByDate.set(dateKey, { dateObj, matches: [] })
       }
-      matchesByDate.get(dateKey)?.push(match as Match)
+      matchesByDate.get(dateKey)?.matches.push(match as Match)
     }
   }
 
-  const formatTeamName = (name: string) => name.replace(/_/g, " ")
+  // Get all unique months from matches
+  const months = new Map<string, { month: number; year: number; dates: string[] }>()
+  
+  for (const [dateKey, { dateObj }] of matchesByDate) {
+    const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`
+    if (!months.has(monthKey)) {
+      months.set(monthKey, { 
+        month: dateObj.getMonth(), 
+        year: dateObj.getFullYear(),
+        dates: []
+      })
+    }
+    months.get(monthKey)?.dates.push(dateKey)
+  }
+
+  const formatTeamName = (name: string) => {
+    const short = name.replace(/_/g, " ")
+    // Abbreviate long names
+    if (short.length > 10) {
+      const abbrevMap: Record<string, string> = {
+        "United States": "EUA",
+        "Saudi Arabia": "SAU",
+        "South Korea": "COR",
+        "Costa Rica": "CRC",
+        "New Zealand": "NZL",
+      }
+      return abbrevMap[short] || short.slice(0, 3).toUpperCase()
+    }
+    return short
+  }
+
+  const weekDays = locale === "pt" 
+    ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+    : locale === "es"
+    ? ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+  const monthNames = locale === "pt"
+    ? ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    : locale === "es"
+    ? ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    : ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-emerald-900 to-green-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Header />
 
-      {/* Hero Section */}
-      <div className="relative overflow-hidden border-b border-emerald-700/50">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NDEgMC0xOCA4LjA1OS0xOCAxOHM4LjA1OSAxOCAxOCAxOCAxOC04LjA1OSAxOC0xOC04LjA1OS0xOC0xOC0xOHptMCAzMmMtNy43MzIgMC0xNC02LjI2OC0xNC0xNHM2LjI2OC0xNCAxNC0xNCAxNCA2LjI2OCAxNCAxNC02LjI2OCAxNC0xNCAxNHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjAzIi8+PC9nPjwvc3ZnPg==')] opacity-30" />
-        <div className="relative mx-auto max-w-6xl px-4 py-12 md:py-16">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg shadow-amber-500/25">
-              <Calendar className="h-7 w-7 text-emerald-900" />
-            </div>
-          </div>
-          <h1 className="text-center text-4xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
+      {/* Title */}
+      <div className="border-b border-slate-700/50 bg-slate-800/50 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-6">
+          <h1 className="text-2xl font-bold text-white md:text-3xl">
             {t("calendar", "title", locale)}
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-emerald-200/80">
+          <p className="mt-1 text-sm text-slate-400">
             {t("calendar", "subtitle", locale)}
           </p>
-          {matches && (
-            <div className="mt-6 flex justify-center gap-6">
-              <div className="flex items-center gap-2 rounded-full bg-emerald-800/50 px-4 py-2 backdrop-blur">
-                <Trophy className="h-4 w-4 text-yellow-400" />
-                <span className="text-sm font-medium text-emerald-100">
-                  {matches.filter((m) => m.is_finished).length} {t("calendar", "finalScore", locale)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 rounded-full bg-emerald-800/50 px-4 py-2 backdrop-blur">
-                <Clock className="h-4 w-4 text-emerald-300" />
-                <span className="text-sm font-medium text-emerald-100">
-                  {matches.filter((m) => !m.is_finished).length} {t("calendar", "scheduled", locale)}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Calendar Content */}
-      <main className="mx-auto max-w-5xl px-4 py-8 md:py-12">
-        {matchesByDate.size === 0 ? (
-          <div className="rounded-2xl border border-emerald-700/50 bg-emerald-800/30 p-12 text-center backdrop-blur">
-            <Calendar className="mx-auto h-16 w-16 text-emerald-600" />
-            <p className="mt-4 text-lg text-emerald-300">{t("calendar", "noMatches", locale)}</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {Array.from(matchesByDate.entries()).map(([date, dayMatches]) => (
-              <div key={date} className="group">
-                {/* Date Header */}
-                <div className="sticky top-0 z-10 mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 shadow-md">
-                    <Calendar className="h-5 w-5 text-emerald-900" />
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-lg font-bold capitalize text-white md:text-xl">{date}</h2>
-                    <p className="text-sm text-emerald-400">
-                      {dayMatches.length} {dayMatches.length === 1 ? "partida" : "partidas"}
-                    </p>
-                  </div>
+      {/* Calendar Grid */}
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        {Array.from(months.entries()).map(([monthKey, { month, year, dates }]) => {
+          // Calculate calendar grid
+          const firstDay = new Date(year, month, 1)
+          const lastDay = new Date(year, month + 1, 0)
+          const startPadding = firstDay.getDay()
+          const totalDays = lastDay.getDate()
+
+          // Create calendar cells
+          const cells: (number | null)[] = []
+          for (let i = 0; i < startPadding; i++) cells.push(null)
+          for (let i = 1; i <= totalDays; i++) cells.push(i)
+          while (cells.length % 7 !== 0) cells.push(null)
+
+          return (
+            <div key={monthKey} className="mb-8">
+              {/* Month Header */}
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">
+                  {monthNames[month]} {year}
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <Trophy className="h-4 w-4 text-yellow-500" />
+                  <span>{dates.length} dias com jogos</span>
+                </div>
+              </div>
+
+              {/* Calendar */}
+              <div className="overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur">
+                {/* Week Days Header */}
+                <div className="grid grid-cols-7 border-b border-slate-700/50 bg-slate-800/50">
+                  {weekDays.map((day) => (
+                    <div key={day} className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      {day}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Matches Timeline */}
-                <div className="relative ml-5 border-l-2 border-emerald-700/50 pl-8 space-y-4">
-                  {dayMatches.map((match, index) => {
-                    const matchTime = new Date(match.match_date).toLocaleTimeString(locale, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                    const isFinished = match.is_finished
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7">
+                  {cells.map((day, index) => {
+                    if (day === null) {
+                      return <div key={index} className="min-h-[100px] border-b border-r border-slate-700/30 bg-slate-900/30 md:min-h-[120px]" />
+                    }
+
+                    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+                    const dayData = matchesByDate.get(dateKey)
+                    const hasMatches = dayData && dayData.matches.length > 0
+                    const isToday = new Date().toISOString().split("T")[0] === dateKey
 
                     return (
                       <div
-                        key={match.id}
-                        className="relative"
+                        key={index}
+                        className={`min-h-[100px] border-b border-r border-slate-700/30 p-1 transition-colors md:min-h-[120px] md:p-2 ${
+                          hasMatches
+                            ? "bg-emerald-900/20 hover:bg-emerald-900/30"
+                            : "bg-slate-800/20 hover:bg-slate-800/40"
+                        } ${isToday ? "ring-2 ring-inset ring-yellow-500/50" : ""}`}
                       >
-                        {/* Timeline Dot */}
-                        <div className={`absolute -left-[41px] top-6 h-4 w-4 rounded-full border-2 ${
-                          isFinished 
-                            ? "border-yellow-400 bg-yellow-400" 
-                            : "border-emerald-500 bg-emerald-900"
-                        }`} />
-
-                        {/* Match Card */}
-                        <div className={`overflow-hidden rounded-2xl border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
-                          isFinished
-                            ? "border-yellow-500/30 bg-gradient-to-br from-emerald-800/80 to-emerald-900/80 shadow-lg shadow-yellow-500/5"
-                            : "border-emerald-700/50 bg-emerald-800/50 hover:border-emerald-600/50"
-                        } backdrop-blur`}>
-                          {/* Card Header */}
-                          <div className="flex items-center justify-between border-b border-emerald-700/30 px-4 py-3 md:px-6">
-                            <div className="flex items-center gap-2">
-                              <span className="rounded-lg bg-emerald-700/50 px-2 py-1 text-xs font-semibold text-emerald-200">
-                                #{match.match_number}
-                              </span>
-                              {isFinished && (
-                                <span className="flex items-center gap-1 rounded-lg bg-yellow-500/20 px-2 py-1 text-xs font-semibold text-yellow-400">
-                                  <Trophy className="h-3 w-3" />
-                                  {t("calendar", "finalScore", locale)}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 text-emerald-300">
-                              <Clock className="h-4 w-4" />
-                              <span className="text-sm font-medium">{matchTime}</span>
-                            </div>
-                          </div>
-
-                          {/* Teams Section */}
-                          <div className="p-4 md:p-6">
-                            <div className="flex items-center justify-between gap-4">
-                              {/* Team A */}
-                              <div className="flex flex-1 flex-col items-center gap-3 text-center">
-                                <div className="relative">
-                                  <div className="overflow-hidden rounded-xl border-2 border-emerald-600/50 bg-emerald-700/30 p-2 shadow-inner">
-                                    <CountryFlag countryName={match.team_a} size="xl" />
-                                  </div>
-                                </div>
-                                <span className="text-sm font-semibold text-white md:text-base">
-                                  {formatTeamName(match.team_a)}
-                                </span>
-                              </div>
-
-                              {/* Score */}
-                              <div className="flex flex-col items-center gap-1">
-                                {isFinished ? (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-3xl font-bold text-white md:text-4xl">
-                                      {match.actual_score_a}
-                                    </span>
-                                    <span className="text-xl text-emerald-500 md:text-2xl">:</span>
-                                    <span className="text-3xl font-bold text-white md:text-4xl">
-                                      {match.actual_score_b}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-2xl font-bold text-emerald-600 md:text-3xl">-</span>
-                                    <span className="text-lg text-emerald-700">vs</span>
-                                    <span className="text-2xl font-bold text-emerald-600 md:text-3xl">-</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Team B */}
-                              <div className="flex flex-1 flex-col items-center gap-3 text-center">
-                                <div className="relative">
-                                  <div className="overflow-hidden rounded-xl border-2 border-emerald-600/50 bg-emerald-700/30 p-2 shadow-inner">
-                                    <CountryFlag countryName={match.team_b} size="xl" />
-                                  </div>
-                                </div>
-                                <span className="text-sm font-semibold text-white md:text-base">
-                                  {formatTeamName(match.team_b)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                        {/* Day Number */}
+                        <div className={`mb-1 text-right text-xs font-medium md:text-sm ${
+                          hasMatches ? "text-emerald-400" : "text-slate-500"
+                        } ${isToday ? "text-yellow-400" : ""}`}>
+                          {day}
                         </div>
+
+                        {/* Matches */}
+                        {hasMatches && (
+                          <div className="space-y-1">
+                            {dayData.matches.map((match) => {
+                              const matchTime = new Date(match.match_date).toLocaleTimeString(locale, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+
+                              return (
+                                <div
+                                  key={match.id}
+                                  className={`group relative overflow-hidden rounded-lg p-1.5 text-xs transition-all hover:scale-[1.02] md:p-2 ${
+                                    match.is_finished
+                                      ? "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 ring-1 ring-yellow-500/30"
+                                      : "bg-slate-700/50 ring-1 ring-slate-600/30 hover:ring-emerald-500/50"
+                                  }`}
+                                >
+                                  {/* Time */}
+                                  <div className="mb-1 text-[10px] font-medium text-slate-400 md:text-xs">
+                                    {matchTime}
+                                  </div>
+
+                                  {/* Teams */}
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                                      <CountryFlag countryName={match.team_a} size="sm" />
+                                      <span className="truncate text-[10px] font-medium text-white md:text-xs">
+                                        {formatTeamName(match.team_a)}
+                                      </span>
+                                    </div>
+
+                                    {match.is_finished ? (
+                                      <div className="flex items-center gap-0.5 rounded bg-slate-900/50 px-1.5 py-0.5">
+                                        <span className="text-[10px] font-bold text-white md:text-xs">{match.actual_score_a}</span>
+                                        <span className="text-[10px] text-slate-500">:</span>
+                                        <span className="text-[10px] font-bold text-white md:text-xs">{match.actual_score_b}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[10px] text-slate-500 md:text-xs">vs</span>
+                                    )}
+
+                                    <div className="flex items-center gap-1 min-w-0 flex-1 justify-end">
+                                      <span className="truncate text-[10px] font-medium text-white md:text-xs">
+                                        {formatTeamName(match.team_b)}
+                                      </span>
+                                      <CountryFlag countryName={match.team_b} size="sm" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     )
                   })}
                 </div>
               </div>
-            ))}
+            </div>
+          )
+        })}
+
+        {matchesByDate.size === 0 && (
+          <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-12 text-center">
+            <p className="text-slate-400">{t("calendar", "noMatches", locale)}</p>
           </div>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-emerald-800/50 bg-emerald-950/50 py-6">
-        <div className="mx-auto max-w-5xl px-4 text-center">
-          <p className="text-sm text-emerald-500">
-            FIFA World Cup 2026
-          </p>
+      {/* Legend */}
+      <div className="border-t border-slate-700/50 bg-slate-800/30">
+        <div className="mx-auto max-w-7xl px-4 py-4">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-emerald-900/50 ring-1 ring-emerald-500/30" />
+              <span>Dia com jogos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-gradient-to-r from-yellow-500/30 to-amber-500/30 ring-1 ring-yellow-500/30" />
+              <span>Jogo finalizado</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded bg-slate-700/50 ring-2 ring-yellow-500/50" />
+              <span>Hoje</span>
+            </div>
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
