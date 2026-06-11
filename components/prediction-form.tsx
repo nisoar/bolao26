@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { CountryFlag } from "@/components/country-flag"
 import { useLanguage } from "@/lib/i18n/use-language"
 import { t } from "@/lib/i18n/translations"
+import { formatMatchDateTime } from "@/lib/utils/format-date"
 
 interface Match {
   id: string
@@ -88,7 +89,7 @@ export function PredictionForm({ match, existingPrediction }: PredictionFormProp
           Match {match.match_number}: <CountryFlag countryName={match.team_a} /> {match.team_a} vs {match.team_b}{" "}
           <CountryFlag countryName={match.team_b} />
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{matchDate.toLocaleString()}</p>
+        <p className="text-sm text-muted-foreground">{formatMatchDateTime(match.match_date, locale)}</p>
       </CardHeader>
       <CardContent>
         {isFinished ? (
