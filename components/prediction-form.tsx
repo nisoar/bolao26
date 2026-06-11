@@ -88,7 +88,11 @@ export function PredictionForm({ match, existingPrediction }: PredictionFormProp
           Match {match.match_number}: <CountryFlag countryName={match.team_a} /> {match.team_a} vs {match.team_b}{" "}
           <CountryFlag countryName={match.team_b} />
         </CardTitle>
-        <p className="text-sm text-muted-foreground">{matchDate.toLocaleString()}</p>
+        <p className="text-sm text-muted-foreground">
+          {matchDate.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" })}
+          {" "}
+          {matchDate.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+        </p>
       </CardHeader>
       <CardContent>
         {isFinished ? (
