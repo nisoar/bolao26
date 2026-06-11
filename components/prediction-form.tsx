@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,7 +39,6 @@ export function PredictionForm({ match, existingPrediction }: PredictionFormProp
   const [scoreB, setScoreB] = useState(existingPrediction?.predicted_score_b?.toString() || "")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [formattedDate, setFormattedDate] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
   const { locale } = useLanguage()
@@ -47,15 +46,6 @@ export function PredictionForm({ match, existingPrediction }: PredictionFormProp
   const matchDate = new Date(match.match_date)
   const isPastDeadline = matchDate < new Date()
   const isFinished = match.is_finished
-
-  // Format the date client-side only to avoid SSR/hydration timezone mismatch
-  useEffect(() => {
-    setFormattedDate(
-      matchDate.toLocaleDateString(locale, { day: "2-digit", month: "2-digit", year: "numeric" }) +
-      " " +
-      matchDate.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
-    )
-  }, [match.match_date, locale])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,9 +88,7 @@ export function PredictionForm({ match, existingPrediction }: PredictionFormProp
           Match {match.match_number}: <CountryFlag countryName={match.team_a} /> {match.team_a} vs {match.team_b}{" "}
           <CountryFlag countryName={match.team_b} />
         </CardTitle>
-        {formattedDate && (
-          <p className="text-sm text-muted-foreground">{formattedDate}</p>
-        )}
+        <p className="text-sm text-muted-foreground">{matchDate.toLocaleString()}</p>
       </CardHeader>
       <CardContent>
         {isFinished ? (
