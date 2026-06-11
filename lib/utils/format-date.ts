@@ -44,3 +44,37 @@ export function getDateKeyBrasilia(date: string | Date): string {
   }).format(d)
   return parts // returns "YYYY-MM-DD"
 }
+
+/**
+ * Converts a UTC date string from the DB into the local "datetime-local" input
+ * format (YYYY-MM-DDTHH:mm) expressed in Brazil timezone.
+ * This ensures the admin sees and edits the correct BRT time.
+ */
+export function formatDateForBRTInput(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  const datePart = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d) // "YYYY-MM-DD"
+
+  const timePart = new Intl.DateTimeFormat("en-GB", {
+    timeZone: TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d) // "HH:mm"
+
+  return `${datePart}T${timePart}`
+}
+
+/**
+ * Converts a "datetime-local" input value (YYYY-MM-DDTHH:mm) that the admin
+ * entered in BRT into an ISO 8601 UTC string suitable for storing in the DB.
+ */
+export function brtInputToUTC(localDatetime: string): string {
+  // Append the BRT offset so the Date constructor parses it correctly
+  const withOffset = `${localDatetime}:00-03:00`
+  return new Date(withOffset).toISOString()
+}

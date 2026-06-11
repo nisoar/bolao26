@@ -19,6 +19,7 @@ import { Plus, Pencil } from "lucide-react"
 import { createMatch, updateMatch } from "@/app/admin/actions"
 import { useLanguage } from "@/lib/i18n/use-language"
 import { t } from "@/lib/i18n/translations"
+import { formatDateForBRTInput } from "@/lib/utils/format-date"
 
 interface Match {
   id: string
@@ -64,10 +65,8 @@ export function MatchFormDialog({ match, mode }: MatchFormDialogProps) {
     }
   }
 
-  const formatDateForInput = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toISOString().slice(0, 16)
-  }
+  // Show the datetime in BRT so the admin sees and edits the correct local time
+  const formatDateForInput = (dateString: string) => formatDateForBRTInput(dateString)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
