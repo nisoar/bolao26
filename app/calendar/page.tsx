@@ -4,6 +4,7 @@ import { Header } from "@/components/header"
 import { cookies } from "next/headers"
 import { t, type Locale } from "@/lib/i18n/translations"
 import { Trophy, ChevronLeft, ChevronRight } from "lucide-react"
+import { getDateKeyBrasilia, formatMatchTime } from "@/lib/utils/format-date"
 
 interface Match {
   id: string
@@ -32,8 +33,10 @@ export default async function CalendarPage() {
 
   if (matches) {
     for (const match of matches) {
+      // Group by day in Brazil timezone so a 22:00 UTC match (= 19:00 BRT)
+      // is counted on the correct Brazilian calendar day
+      const dateKey = getDateKeyBrasilia(match.match_date)
       const dateObj = new Date(match.match_date)
-      const dateKey = dateObj.toISOString().split("T")[0]
 
       if (!matchesByDate.has(dateKey)) {
         matchesByDate.set(dateKey, { dateObj, matches: [] })
@@ -42,17 +45,16 @@ export default async function CalendarPage() {
     }
   }
 
-  // Get all unique months from matches
+  // Get all unique months from matches (using Brazil dateKey which is YYYY-MM-DD)
   const months = new Map<string, { month: number; year: number; dates: string[] }>()
   
-  for (const [dateKey, { dateObj }] of matchesByDate) {
-    const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`
+  for (const [dateKey] of matchesByDate) {
+    const [yearStr, monthStr] = dateKey.split("-")
+    const year = Number(yearStr)
+    const month = Number(monthStr) - 1 // 0-indexed
+    const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`
     if (!months.has(monthKey)) {
-      months.set(monthKey, { 
-        month: dateObj.getMonth(), 
-        year: dateObj.getFullYear(),
-        dates: []
-      })
+      months.set(monthKey, { month, year, dates: [] })
     }
     months.get(monthKey)?.dates.push(dateKey)
   }
@@ -172,10 +174,7 @@ export default async function CalendarPage() {
                         {hasMatches && (
                           <div className="space-y-1">
                             {dayData.matches.map((match) => {
-                              const matchTime = new Date(match.match_date).toLocaleTimeString(locale, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
+                              const matchTime = formatMatchTime(match.match_date, locale)
 
                               return (
                                 <div
