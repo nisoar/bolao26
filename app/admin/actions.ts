@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
+import { brtInputToUTC } from "@/lib/utils/format-date"
 
 async function checkAdminAccess() {
   const supabase = await createClient()
@@ -33,7 +34,8 @@ export async function createMatch(formData: FormData) {
     const matchNumber = Number.parseInt(formData.get("matchNumber") as string)
     const teamA = formData.get("teamA") as string
     const teamB = formData.get("teamB") as string
-    const matchDate = formData.get("matchDate") as string
+    // The input value is in BRT — convert to UTC before storing
+    const matchDate = brtInputToUTC(formData.get("matchDate") as string)
 
     const { error } = await supabase.from("matches").insert({
       match_number: matchNumber,
@@ -60,7 +62,8 @@ export async function updateMatch(matchId: string, formData: FormData) {
     const matchNumber = Number.parseInt(formData.get("matchNumber") as string)
     const teamA = formData.get("teamA") as string
     const teamB = formData.get("teamB") as string
-    const matchDate = formData.get("matchDate") as string
+    // The input value is in BRT — convert to UTC before storing
+    const matchDate = brtInputToUTC(formData.get("matchDate") as string)
 
     const { error } = await supabase
       .from("matches")

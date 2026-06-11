@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useLanguage } from "@/lib/i18n/use-language"
 import { t } from "@/lib/i18n/translations"
+import { formatMatchDateTime } from "@/lib/utils/format-date"
 
 interface Match {
   id: string
@@ -93,8 +94,6 @@ export function AdminMatchCard({ match }: AdminMatchCardProps) {
     }
   }
 
-  const matchDate = new Date(match.match_date)
-
   return (
     <Card>
       <CardHeader>
@@ -110,7 +109,7 @@ export function AdminMatchCard({ match }: AdminMatchCardProps) {
             <Badge variant="outline">{t("admin", "pending", locale)}</Badge>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">{matchDate.toLocaleString()}</p>
+        <p className="text-sm text-muted-foreground">{formatMatchDateTime(match.match_date, locale)}</p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
